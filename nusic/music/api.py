@@ -19,10 +19,11 @@ def _check_user(token):
 	if Token.objects.filter(token=token).exists():
 		token = Token.objects.select_related('user').filter(token=token).order_by('-expire_time').first()
 		# print('======',toke)
-		print('======token',token.expire_time)
 		print(datetime.datetime.now().replace(tzinfo=pytz.timezone('UTC')))
 		now = datetime.datetime.now().replace(tzinfo=pytz.timezone('UTC'))
-		if token.expire_time > now:
+		print('======token',token.expire_time)
+		print('======now',now)
+		if now < token.expire_time :
 			return 1
 		if not token.user:
 			return 2
@@ -70,7 +71,6 @@ def get_code(phone):
 def country_show(**name):
 	ctx = {}
 	ctx['list_country'] = list_country = []
-	# first = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
 	country = Country.objects.all().order_by('name')
 	one = Country.objects.filter(name__startswith=name)
 	print(one)
@@ -83,23 +83,24 @@ def country_show(**name):
 		}
 		list_country.append(d)
 
-	# for j in country:
-	# 	for i in first:
-	# 		a = i
-	# 		print('====j',j.name,'=====',i)
-	# 		if i == j.name[:1]:
-	# 			i = {
-	# 				'id': j.id,
-	# 				'name': j.name,
-	# 				'code': j.code,
-	# 				'logo': j.logo.url
-	# 			}
-	# 			print(i)
-
-	# 			list_country.append(i)
-	return list_country				
+	return list_country		
 
 
+#查询封面
+@api
+def cover_show():
+	cover = []
+
+	image = Cover.objects.all()	
+
+	for i in image:
+		d = {
+			"cover":i.cover.url,
+			"cgold":i.cgold
+		}
+
+		cover.append(d)
+	return {"code":1, "msg":cover}
 
 
 #登陆||注册
@@ -148,11 +149,11 @@ def login(phone, code, id):
 
 
 #第一次用户登陆之后需添加用户名
-@check_user
 @api
-def createname(token, nickname, headphoto):
+@check_user
+def createname(token, nickname, id):
 
-	headphoto = HeadPhoto.objects.filter(headimg=headphoto).first()
+	headphoto = HeadPhoto.objects.filter(id=id).first()
 	
 	user = User.objects.filter(id=token.user.id).first()
 
@@ -172,16 +173,16 @@ def createname(token, nickname, headphoto):
 #
 @api
 @check_user
-def mix_insert(token, cover, dname, mname):
+def mix_insert(token, id, dname, mname):
 
 	if token != None:
 		user = User.objects.filter(id=token.user.id).first()
 
-		image = Cover.objects.filter(cover=cover).first()
+		image = Cover.objects.filter(id=id).first()
 
-		Mix.objects.create(
+		Mashups.objects.create(
 			user = user,
-			cover = image,
+			id = image,
 			dname = dname,
 			mname = mname
 		)
@@ -209,33 +210,45 @@ def music_show(token):
 		mlist.append(d)
 	print(mlist)
 
-	return mlist
+	return {'code':1, 'msg':mlist}
 
 
 @api
 @check_user
-def choose_music(token, id=[1]):
+def choose_music(token, id=[1,2,3,4]):
 	print('====',token.user.id)
 	user = User.objects.filter(id=token.user.id).first()
 
 	song = Song.objects.filter(id__in=id)
 
-	mix = Mix.objects.create(
+	mashups = Mashups.objects.create(
 		user = user
 	)
 	for i in song:
-		mix.song.add(i)
+		mashups.song.add(i)
 
 	return {'code':1, 'msg':'添加成功'}
 
 
 @api
-@check_user
 def rank():
+	try:
+		listp = []
+		mashups = Mashups.objects.values('mname')
+		print('----')
+		for i in mashups:
+			print(i)
+			d = {
+				'mashups':i.mname,
+				'user':i.user.nickname
+			}
+			listp.append(d)
+		print('===')
 
-	mix = Mix.objects.all()
-
-	return 
+		return listp
+	except:
+		return {"code":-1, "msg":"错误"}
+	
 	
 
 
