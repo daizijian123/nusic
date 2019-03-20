@@ -16,5 +16,8 @@ admin.site.register(Game_sessions)
 admin.site.register(Devices)
 admin.site.register(Track_cues)
 admin.site.register(Tracks)
+admin.site.register(FeedBack)
+admin.site.register(RequestSong)
+
 
 
